@@ -18,7 +18,7 @@ def integrator(state, dt, force_engine):
 
 
 # The main driver for the dynamics simulation
-def pines(dt, nsteps):
+def pines(dt, nsteps, temp=298):
     print("\n ======= RUNNING PINES ====== \n")
     #                       MASS        POSITION                        VELOCITY
     state = defs.State([np.array([1.]), np.array([[1.], [0.], [0.]]).T, np.array([[0.], [0.], [0.]]).T])
@@ -26,10 +26,13 @@ def pines(dt, nsteps):
     print("Simulated trajectory:")
     print("%16s%32s%16s" % ("#time", "position", "(x,y,z)"))
     for istep in range(nsteps):
+        if istep % 100 == 0:
+            state.nuclei.velocity[0][0] = utils.momentum_sampling(state.nuclei.mass, temp)
+            print("Thermostated")
         print(defs.fprint_format % state.time, end='')
         integrator(state, dt, ho_force_engine)
         utils.mprint(state.nuclei.position)
 
 
 if __name__ == "__main__":
-    pines(0.1, 100)
+    pines(0.1, 1000)

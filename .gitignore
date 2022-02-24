@@ -16,3 +16,9 @@ __pycache__/
 
 # PyCharm
 .idea
+
+# outputs
+outputs
+
+# Working file
+working_test.py
