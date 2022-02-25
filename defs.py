@@ -1,10 +1,16 @@
-# Set up the calculation environment
-fprint_format = "%16.8f"
-
 import numpy as np
 
 """
-State is the class that consist of information for a snapshot of one dynamics simulation.
+System is the class that consists of global system parameters.
+"""
+class System():
+
+    def __init__(self, temperature, coupling_time):
+        self.temperature = temperature
+        self.coupling_time = coupling_time
+
+"""
+State is the class that consists of information for a snapshot of one dynamics simulation.
 """
 
 class State():
@@ -19,9 +25,9 @@ class State():
             self.mass = mass
             self.position = position
             self.velocity = velocity
-    
+
     class RDMElectrons:
-        def __init__(self): 
+        def __init__(self):
             self.rdm =  np.eye(2)
 
-    
+
