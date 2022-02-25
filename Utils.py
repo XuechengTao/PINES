@@ -1,4 +1,4 @@
-import defs
+import Defs
 import numpy as np
 import sys
 
@@ -52,15 +52,18 @@ def mprint(matrix, print_place = sys.stdout):
 # Write intermediate information
 def inter_print(state):
     print (eprint_format % round(state.time * autime_to_fs, 3), end='')
-    print (eprint_format % state.nuclei.position[0, 0], eprint_format % state.nuclei.position[1, 1])
+    print ((3 * eprint_format) % \
+           (state.kin_energy, state.pot_energy, state.tot_energy),  end='')
+    print ((2 * eprint_format) % \
+           (state.nuclei.position[0, 0], state.nuclei.position[1, 1]))
 
 # Write the trajectory to xyz file
-def xyzprint(state, print_place = sys.stdout):
-    print(len(state.nuclei.mass), file = print_place)
+def xyzprint(state, print_place=sys.stdout):
+    print(len(state.nuclei.mass), file=print_place)
     print("# at time " + str(round(state.time * autime_to_fs, 3)) + " fs", file = print_place)
     xyz_print = state.nuclei.position * bohr_to_angstrom
     for row in xyz_print:
         print("%5s" % "X", end='', file=print_place)
         for val in row:
-            print(fprint_format % val, end='', file = print_place)
+            print(fprint_format % val, end='', file=print_place)
         print('', file = print_place)
