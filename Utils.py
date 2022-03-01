@@ -42,6 +42,11 @@ au_to_amu = 1.0 / amu_to_au
 freq_au_to_inv_cm = (1.0 / (2 * np.pi * clight_si * 100.0 * autime_to_second))
 inv_cm_to_freq_au = 1. / freq_au_to_inv_cm
 
+def convert_args_to_au(args):
+    args.dt *= fs_to_autime
+    args.coupling_time *= fs_to_autime
+    args.temperature *= kboltz
+
 # Matrix printout
 def mprint(matrix, print_place = sys.stdout):
     for row in matrix:
@@ -51,11 +56,11 @@ def mprint(matrix, print_place = sys.stdout):
 
 # Write intermediate information
 def inter_print(state):
-    print (eprint_format % round(state.time * autime_to_fs, 3), end='')
+    print (eprint_format % round(state.time * autime_to_fs, 6), end='')
     print ((3 * eprint_format) % \
            (state.kin_energy, state.pot_energy, state.tot_energy),  end='')
     print ((2 * eprint_format) % \
-           (state.nuclei.position[0, 0], state.nuclei.position[1, 1]))
+           (state.nuclei.position[0, 0, 0], state.nuclei.position[1, 1, 0]))
 
 # Write the trajectory to xyz file
 def xyzprint(state, print_place=sys.stdout):
