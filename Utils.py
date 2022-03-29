@@ -19,9 +19,9 @@ avogadro = 6.02214076e23
 
 # Set up the unit conversion constants
 bohr_to_meter = hbar_si / (emass_si * clight_si * afine)
-meter_to_bohr = 1.0 / bohr_to_meter
-bohr_to_angstrom = bohr_to_meter * 1e10
-angstrom_to_bohr = 1.0 / bohr_to_angstrom
+meter_to_bohr = 1. / bohr_to_meter
+bohr_to_angstrom = bohr_to_meter * 1.e10
+angstrom_to_bohr = 1. / bohr_to_angstrom
 
 hartree_to_joule = (afine * clight_si) * (afine * clight_si) * emass_si
 joule_to_hartree = 1. / hartree_to_joule
@@ -30,16 +30,16 @@ ev_to_hartree = 1. / hartree_to_ev
 kboltz = kboltz_si * joule_to_hartree
 
 autime_to_second = hbar_si / hartree_to_joule
-second_to_autime = 1.0 / autime_to_second
-autime_to_fs = 1.0e15 * autime_to_second
-fs_to_autime = 1.0 / autime_to_fs
-autime_to_ps = 1.0e12 * autime_to_second
-ps_to_autime = 1.0 / autime_to_ps
+second_to_autime = 1. / autime_to_second
+autime_to_fs = 1.e15 * autime_to_second
+fs_to_autime = 1. / autime_to_fs
+autime_to_ps = 1.e12 * autime_to_second
+ps_to_autime = 1. / autime_to_ps
 
-amu_to_au = 1.0e-3 / avogadro / emass_si
-au_to_amu = 1.0 / amu_to_au
+amu_to_au = 1.e-3 / avogadro / emass_si
+au_to_amu = 1. / amu_to_au
 
-freq_au_to_inv_cm = (1.0 / (2 * np.pi * clight_si * 100.0 * autime_to_second))
+freq_au_to_inv_cm = (1. / (2. * np.pi * clight_si * 1.e2 * autime_to_second))
 inv_cm_to_freq_au = 1. / freq_au_to_inv_cm
 
 def convert_args_to_au(args):
