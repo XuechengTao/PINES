@@ -66,7 +66,7 @@ def inter_print(state):
 def xyzprint(state, print_place=sys.stdout):
     print(len(state.nuclei.mass), file=print_place)
     print("# at time " + str(round(state.time * autime_to_fs, 3)) + " fs", file = print_place)
-    xyz_print = state.nuclei.position * bohr_to_angstrom
+    xyz_print = state.nuclei.get_centroid_position() * bohr_to_angstrom
     for row in xyz_print:
         print("%5s" % "X", end='', file=print_place)
         for val in row:

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def func_prototype():
+def func_prototype(state, system):
     return True
 
 """
@@ -16,7 +16,9 @@ class System():
         self.coupling_time = args.coupling_time
         self.force_engine = force_engine
         self.propagator_type_name = args.propagator
-        self.propagator_type = func_prototype
+        self.propagator = func_prototype
+        self.thermostat_type_name = args.thermostat
+        self.thermostat = func_prototype
 
         self.n_beads = args.n_beads
         self.cartesian_to_normalmode = np.eye(args.n_beads)
@@ -41,21 +43,26 @@ class State():
 
         n_input_dims = len(nuc_mpv[1].shape)
         if (n_input_dims == 2 and system.n_beads == 1):
-            print("Initializing ring-polymers with *centroid* input")
+            print(" Initializing ring-polymers with *centroid* input")
             self.nuclei = self.Nuclei(nuc_mpv[0], np.expand_dims(nuc_mpv[1], axis=2), np.expand_dims(nuc_mpv[2], axis=2))
             self.rdmelectrons = self.RDMElectrons()
         elif (n_input_dims == 3):
-            print("Initializing ring-polymers with *bead* input")
+            print(" Initializing ring-polymers with *bead* input")
             self.nuclei = self.Nuclei(nuc_mpv[0], nuc_mpv[1], nuc_mpv[2])
             self.rdmelectrons = self.RDMElectrons()
         else:
-            exit("Wrong dimensions of the input of the positions")
+            exit(" Wrong dimensions of the input of the positions")
 
     class Nuclei:
         def __init__(self, mass, position, velocity):
             self.mass = mass
             self.position = position
             self.velocity = velocity
+
+        def get_centroid_position(self):
+            return np.mean(self.position, axis=2)
+        def get_centroid_velocity(self):
+            return np.mean(self.velocity, axis=2)
 
     class RDMElectrons:
         def __init__(self):

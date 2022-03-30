@@ -7,13 +7,15 @@ from argparse import RawTextHelpFormatter
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Read in customized system parameters', formatter_class=RawTextHelpFormatter)
-    parser.add_argument('--dt', dest='dt', type=float, default=0.1, help="Propagation timestep in fs")
+    parser.add_argument('--dt',     dest='dt', type=float, default=0.1, help="Propagation timestep in fs")
     parser.add_argument('--nsteps', dest='n_steps', type=int, default=25, help="Number of steps in integers")
-    parser.add_argument('--temp', dest='temperature', type=float, default=0., help="System temperature in K")
-    parser.add_argument('--tau', dest='coupling_time', type=float, default=100., help="Coupling time in fs")
+    parser.add_argument('--temp',   dest='temperature', type=float, default=0., help="System temperature in K")
+    parser.add_argument('--tau',    dest='coupling_time', type=float, default=100., help="Coupling time in fs")
     parser.add_argument('--nbeads', dest='n_beads', type=int, default=1, help="Number of ring-polymer beads")
-    parser.add_argument('--prop', dest='propagator', type=str, choices=["exactho", "cayley"], \
-                                  default="exactho", help="The type of the propagator")
+    parser.add_argument('--therm',  dest='thermostat', type=str, choices=["none"], \
+                                    default="none", help="Whether to turn on the thermostats for centroid and internal modes DOFs")
+    parser.add_argument('--prop',   dest='propagator', type=str, choices=["exactho", "cayley"], \
+                                    default="exactho", help="The type of the propagator")
     return parser.parse_args()
 
 def initialize_system(system, n_atoms):
@@ -29,14 +31,14 @@ def initialize_system(system, n_atoms):
         phase = 2. * np.pi / n_beads
         for irow in range(n_beads):
             transformation_matrix[irow, 0] = normalization_factor
-            transformation_matrix[irow, n_beads // 2] = normalization_factor * np.pow(-1, irow+1)
-            for icol in range(n_beads // 2):
+            transformation_matrix[irow, n_beads // 2] = normalization_factor * np.power(-1, irow+1)
+            for icol in range(1, n_beads // 2):
                 transformation_matrix[irow, icol] = np.sqrt(2.) * normalization_factor * np.cos(phase * (irow+1) *icol)
                 transformation_matrix[irow, icol+ n_beads // 2] = np.sqrt(2.) * normalization_factor * np.sin(phase * (irow+1) *icol)
         return transformation_matrix
 
     def NormalModeFrequency(n_beads, temperature):
-        omega_n =  temperature * Utils.kboltz * n_beads
+        omega_n =  temperature * n_beads
         return 2. * omega_n * np.sin(np.arange(n_beads) * np.pi / n_beads)
 
     system.cartesian_to_normalmode = CartesianToNormalmodeMatrix(system.n_beads)
@@ -47,6 +49,9 @@ def initialize_system(system, n_atoms):
         system.propagator = free_ring_polymer_propagation_exactho
     elif (system.propagator_type_name == "cayley"):
         system.propagator = free_ring_polymer_propagation_sqrtcayley
+
+    if (system.thermostat_type_name == "none"):
+        system.thermostat = Defs.func_prototype
 
 def thermostat(state, system):
     sigma = np.sqrt(system.temperature * system.n_beads / state.nuclei.mass)
@@ -71,7 +76,7 @@ def free_ring_polymer_propagation_exactho(state, system, evolution_time):
         sin_freqt = np.sin(system.normalmode_frequency * evolution_time)
         nm_position_new = np.empty_like(nm_position)
         nm_position_new[:,:,0] = nm_position[:,:,0] + evolution_time * nm_velocity[:,:,0]
-        nm_position_new[:,:,1] = nm_position[:,:,1:] * cos_freqt[None,None,1:] \
+        nm_position_new[:,:,1:] = nm_position[:,:,1:] * cos_freqt[None,None,1:] \
                                + nm_velocity[:,:,1:] * (sin_freqt[1:] / system.normalmode_frequency[1:])[None,None,:]
         nm_velocity_new = nm_velocity[:,:,:] * cos_freqt[None,None,:] \
                         - nm_position[:,:,:] * (sin_freqt * system.normalmode_frequency)[None,None,:]
@@ -127,13 +132,12 @@ def integrator(state, system):
 
     # Step "B"
     state.nuclei.velocity[:,:,:] += 0.5 * system.dt * state.bead_force[:,:,:] * reciprocal_mass[:,None,None]
-
     # Step "A"/"C"
     system.propagator(state, system, 0.5 * system.dt)
 
     # Step "O"
-    if (system.temperature > Utils.tol and (state.time % system.coupling_time) < system.dt):
-        thermostat(state, system)
+    if (state.time % system.coupling_time) < system.dt:
+        system.thermostat(state, system)
 
     # Step "A"/"C"
     system.propagator(state, system, 0.5 * system.dt)
@@ -159,6 +163,7 @@ def pines(system, state):
     for ibead in range(system.n_beads):
         state.bead_pot_energy[ibead], state.bead_force[:,:,ibead] = system.force_engine(state.nuclei.position[:,:,ibead])
     ForceEngine.update_state_energy(state, system)
+
     print ("%16s%16s%16s%16s" % ("#time (fs)", "kinetic", "potential", "total energy"))
     Utils.inter_print(state)
     with open('trajectory.xyz', "w") as traj_file:
@@ -169,3 +174,5 @@ def pines(system, state):
             integrator(state, system)
             Utils.inter_print(state)
             Utils.xyzprint(state, traj_file)
+
+    return state
