@@ -1,10 +1,12 @@
-# PINES
-The program aims to provide a simple and readable Python tool to perform path-integral dynamics simulation involving excited states.
+# PINES (Path-Integral iNvolving Excited States)
+The program aims to provide a simple and readable Python driver to perform path-integral dynamics simulation involving excited states.
 
-<!-- The current features -->
-1. Conventional Ring polymer molecular dynamics (RPMD) propagator in NVE/NVT ensemble for ground state simulation
-2. The Cayley-modified propagator of the free ring-polymer propagation, such that a larger time step can be used
+## The current functionalities
+1. Conventional **Ring polymer molecular dynamics** (RPMD) propagator in NVE ensemble for ground state simulations
+2. **Temperature-conserved** (NVT) simulations from Andersen and Langevin thermostat, also the version with only internal modes thermostating (T-RPMD)
+3. The **Cayley-modified propagator** for the free ring-polymer propagation (NVE and BCOCB for NVT), such that larger time steps can be used
 
-<!-- To do list -->
-1. Adding the test for Cayley NVE trajectory, and make sure that Sqrt_Cayley * Sqrt_Cayley = Cayley
-2. Implementing Langevin for ring-polymer internal modes thermostating, and the centroid thermostating 
+## Implementing now
+* Add the assertions for the following blocks: Langevin for MD/RPMD, Andersen for MD/RPMD, T-RPMD
+* The photons equations of motion, quantum and semiclassical
+* Interfaces with electronic structure methods, ORCA (this dynamics driver needs to interface a quantum chemistry package to perform calculations)
