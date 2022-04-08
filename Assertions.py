@@ -1,15 +1,15 @@
 import Pines, Defs, Utils, ForceEngine
 import numpy as np
-import filecmp, copy
+import filecmp, copy, math
 
 def unittest_mdintegrator():
     args = Pines.parse_args()
     args.n_steps = 150
-    args.temperature = 0.
+    args.temperature = 300.
     Utils.convert_args_to_au(args)
     print ("\n Input system setup:", args)
 
-    system = Defs.System(args, ForceEngine.harmonic)
+    system = Defs.System(args, ForceEngine.harmonic, print_mode="traj_only")
     # MASS, POSITION, VELOCITY in amu, A, A / fs
     state = Defs.State(system, \
                         [np.array([1., 2.]) * Utils.amu_to_au, \
@@ -17,7 +17,8 @@ def unittest_mdintegrator():
                         (np.array([[0., 0., 0.], [0., 0., 0.]])) * Utils.angstrom_to_bohr * Utils.autime_to_fs])
 
     Pines.pines(system, state)
-    print("\n Assertion 1 - MD integrator: ", filecmp.cmp('trajectory.xyz', 'examples/test_traj1.dat'), "\n")
+
+    assert filecmp.cmp('trajectory.xyz', 'examples/test_traj1.dat'), "Fatal Error; Assertion 1 - MD integrator"
 
 def unittest_rpmdintegrator():
     args = Pines.parse_args()
@@ -30,7 +31,7 @@ def unittest_rpmdintegrator():
     Utils.convert_args_to_au(args)
     print ("\n Input system setup:", args)
 
-    system = Defs.System(args, ForceEngine.morse)
+    system = Defs.System(args, ForceEngine.morse, print_mode="traj_only")
     # MASS, POSITION, VELOCITY in au input directly in this test
     # HF molecule, 4-bead ring-polymer with r_{H-F} = 0.8A,
     initial_state = Defs.State(system, \
@@ -46,33 +47,118 @@ def unittest_rpmdintegrator():
                         ])
 
     state = copy.deepcopy(initial_state)
-    final_state = Pines.pines(system, state)
+    final_state, results_set = Pines.pines(system, state)
     final_state_position, final_state_velocity = final_state.nuclei.get_centroid_position(), final_state.nuclei.get_centroid_velocity()
 
     # print(final_state_position[0, 2] - 1.54271804, \
     #       final_state_position[1, 2] + 0.583181911, \
     #       final_state_velocity[0, 2] + 0.000134305886, \
     #       final_state_velocity[1, 2] - 0.00253181108, \
-    #       final_state.tot_energy - 0.474321302 / 4.)
+    #       final_state.tot_energy - 0.474321302 / 4.)   # from an external code
 
-    print("\n Assertion 2 - RPMD ExactHO integrator: ", filecmp.cmp('trajectory.xyz', 'examples/test_traj2.dat'), "\n")
+    assert filecmp.cmp('trajectory.xyz', 'examples/test_traj2.dat'), "Fatal Error; Assertion 2 - RPMD ExactHO integrator"
 
     args.propagator = 'cayley'
     print ("\n Input system setup:", args)
-    system = Defs.System(args, ForceEngine.morse)
+    system = Defs.System(args, ForceEngine.morse, print_mode="traj_only")
     state = copy.deepcopy(initial_state)
-    final_state = Pines.pines(system, state)
+    final_state, results_set = Pines.pines(system, state)
     final_state_position, final_state_velocity = final_state.nuclei.get_centroid_position(), final_state.nuclei.get_centroid_velocity()
 
     # print(final_state_position[0, 2] - 1.54271804, \
     #       final_state_position[1, 2] + 0.5831819104, \
     #       final_state_velocity[0, 2] + 0.000134305886, \
     #       final_state_velocity[1, 2] - 0.00253181108, \
-    #       final_state.tot_energy - 0.474321302 / 4.)
+    #       final_state.tot_energy - 0.474321302 / 4.)   # from an external code
 
-    print("\n Assertion 3 - RPMD Cayley integrator: ", filecmp.cmp('trajectory.xyz', 'examples/test_traj3.dat'), "\n")
+    assert filecmp.cmp('trajectory.xyz', 'examples/test_traj3.dat'), "Fatal Error; Assertion 3 - RPMD Cayley integrator"
+
+def unittest_thermostat():
+    args = Pines.parse_args()
+    args.dt = 0.1
+    args.coupling_time = 3.
+    args.n_steps = 50  # Regression test
+    # args.n_steps = 5000
+    args.temperature = 3000.
+    args.n_beads = 1
+    args.thermostat = "andersen"
+
+    Utils.convert_args_to_au(args)
+    print ("\n Input system setup:", args)
+
+    system = Defs.System(args, ForceEngine.harmonic, rngseed=10, print_mode="traj_only")
+    # MASS, POSITION, VELOCITY in amu, A, A / fs
+    state = Defs.State(system, \
+                        [np.array([1., 6.]) * Utils.amu_to_au, \
+                        (np.array([[.2, 0., 0.], [0., .1, 0.]])) * Utils.angstrom_to_bohr, \
+                        (np.array([[0., 0., 0.], [0., 0., 0.]])) * Utils.angstrom_to_bohr * Utils.autime_to_fs])
+
+    final_state, results_set = Pines.pines(system, state)
+
+    q_lst = results_set[:, 1]
+    q_sqr_mean = np.mean(np.square(q_lst))
+    q_sqr_mean_analytic = system.temperature /  state.nuclei.mass[0] / np.power(3333.3333 * Utils.inv_cm_to_freq_au, 2)
+                        # Analytical result <q^2> = 1/\beta m \omega^2
+    print(q_sqr_mean, q_sqr_mean_analytic)
+    # print(np.abs(q_sqr_mean - q_sqr_mean_analytic) / q_sqr_mean_analytic)
+    # np.savetxt("test_file", q_lst.T)
+
+    assert filecmp.cmp('trajectory.xyz', 'examples/test_traj4.dat'), "Fatal Error; Assertion 4 - MD thermostat"
+
+    args.n_beads = 4
+    system = Defs.System(args, ForceEngine.harmonic, rngseed=10, print_mode="traj_only")
+    # MASS, POSITION, VELOCITY in amu, A, A / fs
+    state = Defs.State(system, \
+                        [np.array([1., 6.]) * Utils.amu_to_au, \
+                        (np.array([[[.15, 0., 0.], [0., .07, 0.]], \
+                                   [[.18, 0., 0.], [0., .08, 0.]], \
+                                   [[.22, 0., 0.], [0., .12, 0.]], \
+                                   [[.25, 0., 0.], [0., .13, 0.]]]).transpose(1,2,0) * Utils.angstrom_to_bohr), \
+                        (np.array([[[0., 0., 0.], [0., 0., 0.]], [[0., 0., 0.], [0., 0., 0.]], \
+                                   [[0., 0., 0.], [0., 0., 0.]], [[0., 0., 0.], [0., 0., 0.]]]).transpose(1,2,0) \
+                                   * Utils.angstrom_to_bohr * Utils.autime_to_fs)])
+
+    final_state, results_set = Pines.pines(system, state)
+
+    q_lst = results_set[:, 1]
+    q_sqr_mean = np.mean(np.square(q_lst))
+    exp_m_beta_omega = np.exp(- 3333.3333 * Utils.inv_cm_to_freq_au / system.temperature)
+    q_sqr_mean_analytic = 0.5 * (1. + exp_m_beta_omega) / (1. - exp_m_beta_omega) \
+                          / state.nuclei.mass[0] / (3333.3333 * Utils.inv_cm_to_freq_au)
+                        # Analytical result <q^2> = 1/(2 m \omega) * (1 + e^{-\beta \omega}) / (1 - e^{-\beta \omega})
+
+    print(q_sqr_mean, q_sqr_mean_analytic)
+    # print(np.abs(q_sqr_mean - q_sqr_mean_analytic) / q_sqr_mean_analytic)
+    # np.savetxt("test_file2", q_lst.T)
+
+    assert filecmp.cmp('trajectory.xyz', 'examples/test_traj5.dat'), "Fatal Error; Assertion 5 - RPMD thermostat"
+
+def unittest_orca_interface():
+    args = Pines.parse_args()
+    args.n_steps = 50
+    args.dt = 0.1
+    args.temperature = 300.
+    args.thermostat = "none"
+    Utils.convert_args_to_au(args)
+    print ("\n Input system setup:", args)
+
+    system = Defs.System(args, "ORCA", print_mode="all")
+    state = Defs.State(system, \
+                        [np.array([1., 1.]) * Utils.amu_to_au, \
+                        (np.array([[0.5, 0., 0.], [0., 0., 0.]])) * Utils.angstrom_to_bohr, \
+                        (np.array([[0., 0., 0.], [0., 0., 0.]])) * Utils.angstrom_to_bohr * Utils.autime_to_fs])
+
+    final_state, results_set = Pines.pines(system, state)
+    final_state_position, final_state_velocity = final_state.nuclei.get_centroid_position(), final_state.nuclei.get_centroid_velocity()
+
+    # REGRESSION TEST
+    assert math.isclose(final_state_position[0, 0],  0.90053211 * Utils.angstrom_to_bohr, abs_tol=1e-8), "Fatal Error; Assertion 11 - ORCA interface"
+    assert math.isclose(final_state_position[1, 0], -0.40053211 * Utils.angstrom_to_bohr, abs_tol=1e-7), "Fatal Error; Assertion 11 - ORCA interface"
+    # assert filecmp.cmp('trajectory.xyz', 'examples/test_traj11.dat'), "Fatal Error; Assertion 11 - ORCA interface"
 
 if __name__ == "__main__":
 
     unittest_mdintegrator()
     unittest_rpmdintegrator()
+    unittest_thermostat()
+    unittest_orca_interface()

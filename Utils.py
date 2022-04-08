@@ -47,28 +47,59 @@ def convert_args_to_au(args):
     args.coupling_time *= fs_to_autime
     args.temperature *= kboltz
 
+def find_line_number(enumerate_data, pattern):
+    for number, line in enumerate_data:
+        if pattern in line:
+            return number
+
 # Matrix printout
-def mprint(matrix, print_place = sys.stdout):
+def mprint(matrix, print_place=sys.stdout):
     for row in matrix:
         for val in row:
             print(fprint_format % val, end='', file = print_place)
         print('', file = print_place)
 
+def xyzprint(xyz, chem_symbols, print_place=sys.stdout):
+    xyz_print = xyz * bohr_to_angstrom
+    for irow in range(xyz_print.shape[0]):
+        print("%5s" % chem_symbols[irow], end='', file=print_place)
+        for val in xyz_print[irow, :]:
+            print(fprint_format % val, end='', file=print_place)
+        print('', file = print_place)
+
+# Write the trajectory to xyz file
+def state_centroid_xyzprint(state, print_place=sys.stdout):
+    print(len(state.nuclei.mass), file=print_place)
+    print("# at time " + str(round(state.time * autime_to_fs, 3)) + " fs", file = print_place)
+    xyzprint(state.nuclei.get_centroid_position(), state.nuclei.symbols, print_place)
+
 # Write intermediate information
-def inter_print(state):
+def inter_print(state, system):
     print (eprint_format % round(state.time * autime_to_fs, 6), end='')
     print ((3 * eprint_format) % \
            (state.kin_energy, state.pot_energy, state.tot_energy),  end='')
-    print ((2 * eprint_format) % \
-           (state.nuclei.position[0, 0, 0], state.nuclei.position[1, 1, 0]))
+    # USER CUSTOMIZED PART STARTS HERE, e.g.
+    print ((1 * eprint_format) % \
+           (state.nuclei.position[0, 0, 0]), end='')
+    print (eprint_format % (state.kin_energy / 1.5 / system.temperature / system.n_beads))
 
-# Write the trajectory to xyz file
-def xyzprint(state, print_place=sys.stdout):
-    print(len(state.nuclei.mass), file=print_place)
-    print("# at time " + str(round(state.time * autime_to_fs, 3)) + " fs", file = print_place)
-    xyz_print = state.nuclei.get_centroid_position() * bohr_to_angstrom
-    for row in xyz_print:
-        print("%5s" % "X", end='', file=print_place)
-        for val in row:
-            print(fprint_format % val, end='', file=print_place)
-        print('', file = print_place)
+def update_state_energy(state, system):
+    for ibead in range(system.n_beads):
+        state.bead_kin_energy[ibead] = 0.5 * np.sum(np.matmul(state.nuclei.mass, np.square(state.nuclei.velocity[:,:,ibead])))
+    state.kin_energy = np.average(state.bead_kin_energy)
+
+    state.spr_energy = 0.
+    if (system.n_beads > 1):
+        for ibead in range(system.n_beads):
+            state.spr_energy += np.sum(np.matmul(state.nuclei.mass, \
+                                                 np.square(state.nuclei.position[:,:,ibead-1] - state.nuclei.position[:,:,ibead])))
+        state.spr_energy *= 0.5 * system.n_beads * system.temperature * system.temperature
+
+    state.pot_energy = np.average(state.bead_pot_energy)
+    state.tot_energy = state.kin_energy + state.spr_energy + state.pot_energy
+
+def get_state_properties(state, system):
+    quantity2 = state.nuclei.get_centroid_position()[0, 0]
+
+    # USER CUSTOMIZED FUNCTION
+    return [state.kin_energy, quantity2]
