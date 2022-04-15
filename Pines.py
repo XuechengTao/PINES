@@ -164,13 +164,13 @@ def free_ring_polymer_propagation_sqrtcayley(state, system, half_evolution_time)
 # Korol, Bou-Rabee, Miller JCP 151, 124103 (2019)
 # Korol, Rosa-Raices, Bou-Rabee, Miller (2020) JCP 152, 104102
 # Rosa-Raices, Sun, Bou-Rabee, Miller (2021) JCP 154, 024106
-
 def integrator(state, system, rng):
     state.time += system.dt
     reciprocal_mass = np.reciprocal(state.nuclei.mass)
 
     # Step "B"
     state.nuclei.velocity[:,:,:] += 0.5 * system.dt * state.bead_force[:,:,:] * reciprocal_mass[:,None,None]
+
     # Step "A"/"C"
     system.propagator(state, system, 0.5 * system.dt)
 

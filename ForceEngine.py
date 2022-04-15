@@ -16,7 +16,7 @@ def harmonic(position):
 # w = 3333.33 cm^-1
     omega = 3333.3333 * Utils.inv_cm_to_freq_au
     return [0.5 * Utils.amu_to_au * omega**2 * np.sum(np.square(position)),
-            -position * Utils.amu_to_au * omega**2]
+            - position * Utils.amu_to_au * omega**2]
 
 # Single bond (Diatomic) Morse potential
 def morse(position):
@@ -29,7 +29,7 @@ def morse(position):
 
     derivative = 2. * gamma * De * (1. - tmp) * tmp
     force = np.empty_like(position)
-    force[0, :] = -derivative * (position[0, :] - position[1, :]) / bond_distance
+    force[0, :] = - derivative * (position[0, :] - position[1, :]) / bond_distance
     force[1, :] = -force[0, :]
 
     return [energy, force]
@@ -43,10 +43,10 @@ def find_orca_energy(enumerate_data, datafile):
     energy = np.loadtxt(datafile, skiprows=start_number+2, max_rows=1, usecols=0)
     return energy
 
-def find_orca_force(enumerate_data, datafile, n_atoms):
+def find_orca_gradient(enumerate_data, datafile, n_atoms):
     pattern = '# The current gradient in Eh/bohr'
     start_number = Utils.find_line_number(enumerate_data, pattern)
-    force = - np.loadtxt(datafile, skiprows=start_number+2, max_rows=3*n_atoms, usecols=0)
+    force = np.loadtxt(datafile, skiprows=start_number+2, max_rows=3*n_atoms, usecols=0)
     return np.reshape(force, (n_atoms, 3))
 
 def make_orca_force_engine(chem_symbols):
@@ -70,8 +70,8 @@ def make_orca_force_engine(chem_symbols):
         orca_datafile = orca_workspace + '/orca_energyforce.engrad'
         with open (orca_datafile, 'r') as data:
             enumerate_data = enumerate(data)
-            energy, force = find_orca_energy(enumerate_data, orca_datafile), \
-                            find_orca_force (enumerate_data, orca_datafile, len(chem_symbols))
+            energy, force =   find_orca_energy(enumerate_data, orca_datafile), \
+                            - find_orca_gradient(enumerate_data, orca_datafile, len(chem_symbols))
 
             with open(orca_workspace+'/orca.log', 'a') as logfile:
                 output = output.decode('utf-8')
