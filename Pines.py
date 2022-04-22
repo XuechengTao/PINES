@@ -76,7 +76,7 @@ def initialize_system(system, chem_symbols, cwd):
         system.thermostat = thermostat_langevin
 
     if (system.use_external_force_engine):
-        print(" Buddy call for *ORCA Force Engine* has been sent out. \n")
+        print("  Buddy call for *ORCA Force Engine* has been sent out. \n")
         system.force_engine = ForceEngine.make_orca_force_engine(chem_symbols)
         orca_log_file = cwd + '/orca_tmp/orca.log'
         if os.path.exists(orca_log_file):
@@ -193,12 +193,12 @@ def integrator(state, system, rng):
 
 # The main driver for the dynamics simulation
 def pines(system, state):
-    print("\n ======= RUNNING PINES ====== \n")
+    print("\n  ======= RUNNING PINES ====== \n")
 
     cwd = os.getcwd()
     initialize_system(system, state.nuclei.symbols, cwd)
     # Prepare the system and the output for the t=0 step
-    print (" Trajectory simulation starts successfully. \n")
+    print ("  Trajectory simulation starts successfully. \n")
     rng =  np.random.default_rng(system.rngseed)
     results_set = []
     for ibead in range(system.n_beads):
