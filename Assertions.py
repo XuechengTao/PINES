@@ -213,14 +213,17 @@ def unittest_mean_field_force_engine():
 
 if __name__ == "__main__":
 
-    # unittest_mdintegrator()
-    # unittest_rpmdintegrator()
-    # unittest_thermostat()
-    # unittest_orca_interface()
+    unittest_mdintegrator()
+    unittest_rpmdintegrator()
+    unittest_thermostat()
+    unittest_orca_interface()
+    unittest_mean_field_force_engine()
 
     # TIME TEST ZONE
+    ########################################################
     start_time = time.time()
-    ########################################################
-    unittest_mean_field_force_engine()
-    ########################################################
+
     print("--- test finished in %s seconds ---" % (time.time() - start_time))
+    ########################################################
+
+    print("  All test passed. Finishing Assertions.\n")
