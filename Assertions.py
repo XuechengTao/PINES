@@ -1,13 +1,13 @@
 import Pines, Defs, Utils, ForceEngine, MultiState
 import numpy as np
-import filecmp, copy, math
+import math, filecmp, copy, time
 
 def unittest_mdintegrator():
     args = Pines.parse_args()
     args.n_steps = 150
     args.temperature = 300.
     Utils.convert_args_to_au(args)
-    print ("\n Input system setup:", args)
+    print ("\n  Input system setup:", args, "\n")
 
     system = Defs.System(args, ForceEngine.harmonic, print_mode="traj_only")
     # MASS, POSITION, VELOCITY in amu, A, A / fs
@@ -29,7 +29,7 @@ def unittest_rpmdintegrator():
     args.propagator = 'exactho'
 
     Utils.convert_args_to_au(args)
-    print ("\n Input system setup:", args)
+    print ("\n  Input system setup:", args, "\n")
 
     system = Defs.System(args, ForceEngine.morse, print_mode="traj_only")
     # MASS, POSITION, VELOCITY in au input directly in this test
@@ -59,7 +59,7 @@ def unittest_rpmdintegrator():
     assert filecmp.cmp('trajectory.xyz', 'examples/test_traj2.dat'), "Fatal Error; Assertion 2 - RPMD ExactHO integrator"
 
     args.propagator = 'cayley'
-    print ("\n Input system setup:", args)
+    print ("\n  Input system setup:", args, "\n")
     system = Defs.System(args, ForceEngine.morse, print_mode="traj_only")
     state = copy.deepcopy(initial_state)
     final_state, results_set = Pines.pines(system, state)
@@ -84,7 +84,7 @@ def unittest_thermostat():
     args.thermostat = "andersen"
 
     Utils.convert_args_to_au(args)
-    print ("\n Input system setup:", args)
+    print ("\n  Input system setup:", args, "\n")
 
     system = Defs.System(args, ForceEngine.harmonic, rngseed=10, print_mode="traj_only")
     # MASS, POSITION, VELOCITY in amu, A, A / fs
@@ -140,7 +140,7 @@ def unittest_orca_interface():
     args.temperature = 300.
     args.thermostat = "none"
     Utils.convert_args_to_au(args)
-    print ("\n Input system setup:", args)
+    print ("\n  Input system setup:", args, "\n")
 
     system = Defs.System(args, "ORCA", print_mode="all")
     state = Defs.State(system, \
@@ -156,9 +156,74 @@ def unittest_orca_interface():
     assert math.isclose(final_state_position[1, 0], -0.40053211 * Utils.angstrom_to_bohr, abs_tol=1e-8), "Fatal Error; Assertion 11 - ORCA interface"
     # assert filecmp.cmp('trajectory.xyz', 'examples/test_traj11.dat'), "Fatal Error; Assertion 11 - ORCA interface"
 
+def unittest_mean_field_force_engine():
+    args = Pines.parse_args()
+    args.n_beads = 16
+    Utils.convert_args_to_au(args)
+    print ("\n  Input system setup:", args, "\n")
+
+    system = Defs.System(args, ForceEngine.harmonic, print_mode="all")
+    system.temperature = 1. / 3.25
+    test_multistate_potential = np.array(  [[[117.0139794, 0.0077], [0.0077, 0.02262994515]], \
+                                            [[108.4693221, 0.0077], [0.0077, 0.3530579445]], \
+                                            [[95.53328797, 0.0077], [0.0077, 1.713510074]], \
+                                            [[79.92213368, 0.0077], [0.0077, 5.103357455]], \
+                                            [[63.60360304, 0.0077], [0.0077, 11.53755435]], \
+                                            [[48.46356521, 0.0077], [0.0077, 21.76105313]], \
+                                            [[36, 0.0077], [0.0077, 36]], \
+                                            [[21.372583, 0.0077], [0.0077, 77.9411255]], \
+                                            [[20, 0.0077], [0.0077, 100]], \
+                                            [[21.372583, 0.0077], [0.0077, 77.9411255]], \
+                                            [[36, 0.0077], [0.0077, 36]], \
+                                            [[63.60360304, 0.0077], [0.0077, 11.53755435]], \
+                                            [[79.92213368, 0.0077], [0.0077, 5.103357455]], \
+                                            [[95.53328797, 0.0077], [0.0077, 1.713510074]], \
+                                            [[108.4693221, 0.0077], [0.0077, 0.3530579445]], \
+                                            [[117.0139794, 0.0077], [0.0077, 0.02262994515]]]  )
+    test_multistate_gradient_tensor_1d = np.array(   [[[[[19.69913495, 0], [0, -0.3008650538]], \
+                                                        [[18.81162641, 0], [0, -1.188373585]], \
+                                                        [[17.38197779, 0], [0, -2.61802221]], \
+                                                        [[15.48187762, 0], [0, -4.518122378]], \
+                                                        [[13.20660487, 0], [0, -6.793395131]], \
+                                                        [[10.67025121, 0], [0, -9.329748793]], \
+                                                        [[8, 0], [0, -12]], \
+                                                        [[2.343145751, 0], [0, -17.65685425]], \
+                                                        [[0, 0], [0, -20]], \
+                                                        [[2.343145751, 0], [0, -17.65685425]], \
+                                                        [[8, 0], [0, -12]], \
+                                                        [[13.20660487, 0], [0, -6.793395131]], \
+                                                        [[15.48187762, 0], [0, -4.518122378]], \
+                                                        [[17.38197779, 0], [0, -2.61802221]], \
+                                                        [[18.81162641, 0], [0, -1.188373585]], \
+                                                        [[19.69913495, 0], [0, -0.3008650538]]]]]  )
+    test_multistate_gradient_tensor = np.concatenate((test_multistate_gradient_tensor_1d, \
+                                                      np.zeros_like(test_multistate_gradient_tensor_1d), \
+                                                      np.zeros_like(test_multistate_gradient_tensor_1d)), axis=1)
+
+    mean_field_energy, mean_field_force = MultiState.mean_field_force_engine(test_multistate_potential, test_multistate_gradient_tensor, system)
+    jax_mean_field_energy, jax_mean_field_force = MultiState.jax_mean_field_force_engine(test_multistate_potential, test_multistate_gradient_tensor, system)
+    assert np.isclose(mean_field_energy, 15.97344881, atol=1e-8), "Fatal Error; Assertion 12 - JAX auto differentiation"  ## from an external code
+    assert np.isclose(jax_mean_field_energy, 15.97344881, atol=1e-8), "Fatal Error; Assertion 12 - JAX auto differentiation"  ## from an external code
+
+    gradient_result = np.array([-0.01880406043, -0.07427334271, -0.1636263797, -0.2823826347, -0.4245483971, \
+                                -0.5502163462, -0.07732925642, 0.1389980882, -9.123476373e-08, 0.1384344144, \
+                                -0.1210193967, -0.4151299456, -0.2823825183, -0.1636263797, -0.07427334271, \
+                                -0.01880406043]) ## from an external code
+    assert np.isclose(jax_mean_field_force[0,0,:], gradient_result, atol=1e-12).all(), "Fatal Error; Assertion 12 - JAX auto differentiation"  ## from an external code
+
 if __name__ == "__main__":
 
     unittest_mdintegrator()
     unittest_rpmdintegrator()
     unittest_thermostat()
     unittest_orca_interface()
+    unittest_mean_field_force_engine()
+
+    # TIME TEST ZONE
+    ########################################################
+    start_time = time.time()
+
+    print("--- test finished in %s seconds ---" % (time.time() - start_time))
+    ########################################################
+
+    print("  All test passed. Finishing Assertions.\n")
