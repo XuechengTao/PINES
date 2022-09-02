@@ -44,8 +44,8 @@ inv_cm_to_freq_au = 1. / freq_au_to_inv_cm
 
 def convert_args_to_au(args):
     args.dt *= fs_to_autime
-    args.coupling_time *= fs_to_autime
-    args.temperature *= kboltz
+    args.nuclear_coupling_time *= fs_to_autime
+    args.nuclear_temperature *= kboltz
 
 def find_line_number(enumerate_data, pattern):
     for number, line in enumerate_data:

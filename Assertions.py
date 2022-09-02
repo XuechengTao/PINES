@@ -5,7 +5,7 @@ import math, filecmp, copy, time
 def unittest_mdintegrator():
     args = Pines.parse_args()
     args.n_steps = 150
-    args.temperature = 300.
+    args.nuclear_temperature = 300.
     Utils.convert_args_to_au(args)
     print ("\n  Input system setup:", args, "\n")
 
@@ -25,8 +25,8 @@ def unittest_rpmdintegrator():
     args.dt = 0.05
     args.n_steps = 200
     args.n_beads = 4
-    args.temperature = 300.
-    args.propagator = 'exactho'
+    args.nuclear_temperature = 300.
+    args.nuclear_propagator = 'exactho'
 
     Utils.convert_args_to_au(args)
     print ("\n  Input system setup:", args, "\n")
@@ -58,7 +58,7 @@ def unittest_rpmdintegrator():
 
     assert filecmp.cmp('trajectory.xyz', 'examples/test_traj2.dat'), "Fatal Error; Assertion 2 - RPMD ExactHO integrator"
 
-    args.propagator = 'cayley'
+    args.nuclear_propagator = 'cayley'
     print ("\n  Input system setup:", args, "\n")
     system = Defs.System(args, ForceEngine.morse, print_mode="traj_only")
     state = copy.deepcopy(initial_state)
@@ -76,12 +76,12 @@ def unittest_rpmdintegrator():
 def unittest_thermostat():
     args = Pines.parse_args()
     args.dt = 0.1
-    args.coupling_time = 3.
+    args.nuclear_coupling_time = 3.
     args.n_steps = 50  # Regression test
     # args.n_steps = 5000
-    args.temperature = 3000.
+    args.nuclear_temperature = 3000.
     args.n_beads = 1
-    args.thermostat = "andersen"
+    args.nuclear_thermostat = "andersen"
 
     Utils.convert_args_to_au(args)
     print ("\n  Input system setup:", args, "\n")
@@ -137,8 +137,8 @@ def unittest_orca_interface():
     args = Pines.parse_args()
     args.n_steps = 50
     args.dt = 0.1
-    args.temperature = 300.
-    args.thermostat = "none"
+    args.nuclear_temperature = 300.
+    args.nuclear_thermostat = "none"
     Utils.convert_args_to_au(args)
     print ("\n  Input system setup:", args, "\n")
 
@@ -217,7 +217,7 @@ if __name__ == "__main__":
     unittest_rpmdintegrator()
     unittest_thermostat()
     unittest_orca_interface()
-    unittest_mean_field_force_engine()
+    # unittest_mean_field_force_engine()
 
     # TIME TEST ZONE
     ########################################################
@@ -226,4 +226,4 @@ if __name__ == "__main__":
     print("--- test finished in %s seconds ---" % (time.time() - start_time))
     ########################################################
 
-    print("  All test passed. Finishing Assertions.\n")
+    print("\n  All test passed. Finishing Assertions.\n")
